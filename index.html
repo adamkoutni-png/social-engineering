@@ -1,0 +1,1955 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Social Engineering — Tesina</title>
+  <link rel="icon" type="image/png" href="E.png">
+</head>
+  <style>
+    
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0a0a0f;
+      --surface:   #111118;
+      --border:    #1e1e2e;
+      --accent:    #e63946;
+      --accent2:   #f4a261;
+      --text:      #e8e8f0;
+      --muted:     #6b6b80;
+      --green:     #2ec4b6;
+      --font-main: 'Syne', sans-serif;
+      --font-mono: 'IBM Plex Mono', monospace;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-main);
+      overflow-x: hidden;
+      cursor: none;
+    }
+
+    #cursor {
+      width: 12px; height: 12px;
+      background: var(--accent);
+      border-radius: 50%;
+      position: fixed;
+      top: 0; left: 0;
+      pointer-events: none;
+      z-index: 9999;
+      transition: transform .15s ease;
+      mix-blend-mode: screen;
+    }
+    #cursor-ring {
+      width: 36px; height: 36px;
+      border: 1.5px solid var(--accent);
+      border-radius: 50%;
+      position: fixed;
+      top: 0; left: 0;
+      pointer-events: none;
+      z-index: 9998;
+      transition: left .08s ease, top .08s ease;
+      opacity: .5;
+    }
+
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.2rem 3rem;
+      backdrop-filter: blur(18px);
+      background: rgba(10,10,15,.7);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-logo {
+      font-family: var(--font-mono);
+      font-size: .85rem;
+      color: var(--accent);
+      letter-spacing: .12em;
+    }
+    .nav-links { display: flex; gap: 2.2rem; list-style: none; }
+    .nav-links a {
+      font-size: .8rem;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      text-decoration: none;
+      transition: color .2s;
+    }
+    .nav-links a:hover { color: var(--text); }
+
+    #hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 6rem 3rem 4rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    #hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(230,57,70,.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(230,57,70,.06) 1px, transparent 1px);
+      background-size: 60px 60px;
+      animation: gridMove 20s linear infinite;
+    }
+    @keyframes gridMove {
+      from { transform: translateY(0); }
+      to   { transform: translateY(60px); }
+    }
+
+    .hero-tag {
+      font-family: var(--font-mono);
+      font-size: .75rem;
+      color: var(--accent);
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      margin-bottom: 1.5rem;
+      opacity: 0;
+      animation: fadeUp .6s ease .2s forwards;
+    }
+    .hero-title {
+      font-size: clamp(3rem, 7.2vw, 6.4rem);
+      font-weight: 800;
+      line-height: 1.28;
+      padding-bottom: .12em;
+      max-width: 900px;
+      opacity: 0;
+      animation: fadeUp .7s ease .4s forwards;
+    }
+    .hero-title .red {
+     color: var(--accent);
+     display: inline-block;
+     padding-bottom: .25em;
+}
+
+    .hero-sub {
+      margin-top: 2rem;
+      font-size: 1.05rem;
+      color: var(--muted);
+      max-width: 560px;
+      line-height: 1.7;
+      opacity: 0;
+      animation: fadeUp .7s ease .6s forwards;
+    }
+
+    .hero-cta {
+      margin-top: 3rem;
+      display: flex;
+      gap: 1.2rem;
+      flex-wrap: wrap;
+      opacity: 0;
+      animation: fadeUp .7s ease .8s forwards;
+    }
+    .btn {
+      padding: .85rem 2rem;
+      font-family: var(--font-mono);
+      font-size: .8rem;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      transition: transform .2s, box-shadow .2s;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+    .btn-primary:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 30px rgba(230,57,70,.4);
+    }
+    .btn-ghost {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { border-color: var(--text); }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    section {
+      padding: 6rem 3rem;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .section-label {
+      font-family: var(--font-mono);
+      font-size: .7rem;
+      letter-spacing: .25em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 1rem;
+    }
+    h2 {
+      font-size: clamp(2rem, 4vw, 3.2rem);
+      font-weight: 800;
+      line-height: 1.1;
+      margin-bottom: 1.5rem;
+    }
+    p { line-height: 1.75; color: var(--muted); }
+
+    .divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--border), transparent);
+      margin: 0 3rem;
+    }
+
+    #cosa-e .lead {
+      font-size: 1.3rem;
+      color: var(--text);
+      line-height: 1.6;
+      max-width: 700px;
+      margin-bottom: 1.5rem;
+    }
+    .highlight-box {
+      border-left: 3px solid var(--accent);
+      padding: 1.2rem 1.5rem;
+      background: var(--surface);
+      margin-top: 2rem;
+      font-family: var(--font-mono);
+      font-size: .85rem;
+      color: var(--text);
+      line-height: 1.6;
+    }
+    .highlight-box span { color: var(--accent); }
+
+    #attacchi .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+      gap: 1.5rem;
+      margin-top: 3rem;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 2rem;
+      position: relative;
+      overflow: visible;
+      transition: transform .3s, border-color .3s;
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    .card.visible { opacity: 1; transform: translateY(0); transition: opacity .5s ease, transform .5s ease, border-color .3s; }
+    .card:hover { border-color: var(--accent); transform: translateY(-6px) !important; }
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform .3s;
+    }
+    .card:hover::before { transform: scaleX(1); }
+    .card-icon { font-size: 2rem; margin-bottom: 1rem; }
+    .card h3 { font-size: 1.15rem; margin-bottom: .7rem; }
+    .card p  { font-size: .88rem; }
+    .card .tag {
+      display: inline-block;
+      margin-top: 1.2rem;
+      font-family: var(--font-mono);
+      font-size: .68rem;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      padding: .25rem .6rem;
+      border: 1px solid;
+    }
+    .tag-high   { border-color: var(--accent);  color: var(--accent);  }
+    .tag-medium { border-color: var(--accent2); color: var(--accent2); }
+    .tag-low    { border-color: var(--green);   color: var(--green);   }
+
+    #funzionamento .steps {
+      margin-top: 3rem;
+      position: relative;
+    }
+    .steps::before {
+      content: '';
+      position: absolute;
+      left: 24px; top: 0; bottom: 0;
+      width: 1px;
+      background: var(--border);
+    }
+    .step {
+      display: flex;
+      gap: 2rem;
+      margin-bottom: 3rem;
+      opacity: 0;
+      transform: translateX(-20px);
+    }
+    .step.visible { opacity: 1; transform: none; transition: opacity .5s ease, transform .5s ease; }
+    .step-num {
+      width: 48px; height: 48px;
+      border-radius: 50%;
+      background: var(--accent);
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--font-mono);
+      font-weight: 600;
+      font-size: .85rem;
+      flex-shrink: 0;
+      position: relative;
+      z-index: 1;
+    }
+    .step-body h3 { font-size: 1.1rem; margin-bottom: .5rem; }
+    .step-body p  { font-size: .9rem; }
+
+    #statistiche {
+      background: var(--surface);
+      max-width: 100%;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 5rem 3rem;
+    }
+    #statistiche .inner {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 2rem;
+      margin-top: 3rem;
+    }
+    .stat-item { text-align: center; }
+    .stat-num {
+      font-size: 3.5rem;
+      font-weight: 800;
+      color: var(--accent);
+      line-height: 1;
+      font-family: var(--font-mono);
+    }
+    .stat-label {
+      margin-top: .5rem;
+      font-size: .85rem;
+      color: var(--muted);
+    }
+
+    #difesa .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4rem;
+      margin-top: 3rem;
+    }
+    @media (max-width: 700px) { #difesa .grid-2 { grid-template-columns: 1fr; } }
+    .checklist { list-style: none; margin-top: 1rem; }
+    .checklist li {
+      display: flex;
+      align-items: flex-start;
+      gap: .8rem;
+      padding: .75rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: .9rem;
+      color: var(--muted);
+    }
+    .checklist li::before {
+      content: '✓';
+      color: var(--green);
+      font-weight: 700;
+      font-family: var(--font-mono);
+      flex-shrink: 0;
+    }
+
+    #demo {
+      padding: 5rem 3rem;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .terminal {
+      background: #0d0d14;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 2rem;
+    }
+    .term-bar {
+      background: #1a1a26;
+      padding: .6rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .term-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+    }
+    .term-body {
+      padding: 1.5rem;
+      font-family: var(--font-mono);
+      font-size: .82rem;
+      line-height: 1.9;
+      min-height: 220px;
+      color: #c0c0d0;
+    }
+    .term-line { display: block; }
+    .term-prompt { color: var(--accent); }
+    .term-comment { color: var(--muted); font-style: italic; }
+    .term-warning { color: var(--accent2); }
+    .term-ok { color: var(--green); }
+    .term-cursor {
+      display: inline-block;
+      width: 8px; height: 1.1em;
+      background: var(--text);
+      vertical-align: text-bottom;
+      animation: blink 1s step-end infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 2.5rem 3rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    .footer-logo { font-family: var(--font-mono); font-size: .78rem; color: var(--muted); }
+    .footer-note {
+      display: block;
+      width: 100%;
+      font-size: .9rem;
+      color: var(--text);
+      font-family: var(--font-mono);
+      text-align: center;
+      font-weight: 700;
+}
+
+    .reveal { opacity: 0; transform: translateY(24px); transition: opacity .6s ease, transform .6s ease; }
+    .reveal.visible { opacity: 1; transform: none; }
+
+    @media (max-width: 600px) {
+      nav { padding: 1rem 1.2rem; }
+      section, #quiz, #statistiche, #demo, footer { padding-left: 1.2rem; padding-right: 1.2rem; }
+      .hero-title { font-size: 2.8rem; }
+    }
+    /* EXTRA ANIMAZIONI - effetto presentazione */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(230,57,70,.08), transparent 28%),
+    radial-gradient(circle at 80% 10%, rgba(46,196,182,.06), transparent 30%),
+    linear-gradient(120deg, transparent 0%, rgba(255,255,255,.035) 50%, transparent 100%);
+  animation: ambientScan 10s ease-in-out infinite alternate;
+}
+
+@keyframes ambientScan {
+  from { opacity: .35; transform: translateY(-10px); }
+  to { opacity: .8; transform: translateY(10px); }
+}
+
+.scroll-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 3px;
+  width: 0%;
+  background: linear-gradient(90deg, var(--accent), var(--green), var(--accent2));
+  z-index: 99999;
+  box-shadow: 0 0 18px rgba(230,57,70,.7);
+}
+
+nav {
+  animation: navDrop .8s ease both;
+}
+
+@keyframes navDrop {
+  from { opacity: 0; transform: translateY(-22px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.nav-links a {
+  position: relative;
+}
+
+.nav-links a::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -8px;
+  width: 100%;
+  height: 2px;
+  background: var(--accent);
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform .25s ease;
+}
+
+.nav-links a:hover::after,
+.nav-links a.active::after {
+  transform: scaleX(1);
+  transform-origin: left;
+}
+
+.hero-title {
+  text-shadow: 0 0 28px rgba(230,57,70,.12);
+}
+
+.hero-title .red {
+  position: relative;
+  text-shadow: 0 0 24px rgba(230,57,70,.4);
+}
+
+.hero-title .red::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: .08em;
+  width: 100%;
+  height: 5px;
+  background: linear-gradient(90deg, var(--accent), transparent);
+  opacity: .55;
+  animation: underlinePulse 2.4s ease-in-out infinite;
+}
+
+@keyframes underlinePulse {
+  0%, 100% { transform: scaleX(.25); opacity: .25; }
+  50% { transform: scaleX(1); opacity: .75; }
+}
+
+.section-label {
+  animation: labelGlow 2.8s ease-in-out infinite;
+}
+
+@keyframes labelGlow {
+  0%, 100% { text-shadow: 0 0 0 rgba(230,57,70,0); }
+  50% { text-shadow: 0 0 16px rgba(230,57,70,.7); }
+}
+
+.card,
+.step,
+.stat-item,
+.highlight-box,
+.term-window {
+  will-change: transform, opacity;
+}
+
+.card.visible,
+.step.visible,
+.reveal.visible {
+  animation: cinematicIn .75s cubic-bezier(.2,.8,.2,1) both;
+  animation-delay: var(--delay, 0s);
+}
+
+@keyframes cinematicIn {
+  from {
+    opacity: 0;
+    transform: translateY(38px) scale(.96);
+    filter: blur(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+.card {
+  transition: transform .28s ease, border-color .28s ease, box-shadow .28s ease, background .28s ease;
+}
+
+.card:hover {
+  box-shadow: 0 18px 45px rgba(230,57,70,.16);
+  background: linear-gradient(180deg, rgba(230,57,70,.05), var(--surface));
+}
+
+.card-icon {
+  display: inline-block;
+  transition: transform .28s ease, filter .28s ease;
+}
+
+.card:hover .card-icon {
+  transform: translateY(-4px) scale(1.12) rotate(-4deg);
+  filter: drop-shadow(0 0 12px rgba(230,57,70,.45));
+}
+
+.step-num {
+  animation: stepPulse 2.6s ease-in-out infinite;
+}
+
+@keyframes stepPulse {
+  0%, 100% { box-shadow: 0 0 0 rgba(230,57,70,0); }
+  50% { box-shadow: 0 0 24px rgba(230,57,70,.38); }
+}
+
+.btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, transparent, rgba(255,255,255,.28), transparent);
+  transform: translateX(-120%);
+  transition: transform .55s ease;
+}
+
+.btn:hover::after {
+  transform: translateX(120%);
+}
+
+.stat-num {
+  text-shadow: 0 0 20px rgba(230,57,70,.3);
+}
+
+footer {
+  animation: footerRise .8s ease both;
+}
+
+@keyframes footerRise {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+/* EXTRA PLUS - dettagli scenografici */
+#hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, transparent 0%, rgba(230,57,70,.12) 50%, transparent 100%);
+  transform: translateX(-120%);
+  animation: heroSweep 4.8s ease-in-out infinite;
+}
+
+@keyframes heroSweep {
+  0%, 35% { transform: translateX(-120%); opacity: 0; }
+  50% { opacity: .7; }
+  75%, 100% { transform: translateX(120%); opacity: 0; }
+}
+
+.hero-tag {
+  text-shadow: 0 0 14px rgba(230,57,70,.55);
+}
+
+.hero-sub {
+  animation: softFloat 4s ease-in-out infinite;
+}
+
+@keyframes softFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+h2 {
+  position: relative;
+}
+
+h2::after {
+  content: "";
+  display: block;
+  width: 72px;
+  height: 3px;
+  margin-top: 1rem;
+  background: linear-gradient(90deg, var(--accent), var(--green));
+  box-shadow: 0 0 16px rgba(230,57,70,.45);
+}
+
+.highlight-box {
+  box-shadow: 0 0 0 1px rgba(230,57,70,.08), 0 18px 45px rgba(0,0,0,.28);
+  transition: transform .3s ease, box-shadow .3s ease;
+}
+
+.highlight-box:hover {
+  transform: translateX(8px);
+  box-shadow: 0 0 0 1px rgba(230,57,70,.28), 0 18px 55px rgba(230,57,70,.12);
+}
+
+.card::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  pointer-events: none;
+  background: radial-gradient(circle at var(--mx, 50%) var(--my, 50%), rgba(230,57,70,.16), transparent 38%);
+  opacity: 0;
+  transition: opacity .25s ease;
+}
+
+.card:hover::after {
+  opacity: 1;
+}
+
+.tag {
+  transition: transform .22s ease, box-shadow .22s ease;
+}
+
+.card:hover .tag {
+  transform: translateY(-2px);
+  box-shadow: 0 0 18px rgba(230,57,70,.14);
+}
+
+.steps::before {
+  animation: lineGlow 3s ease-in-out infinite;
+}
+
+@keyframes lineGlow {
+  0%, 100% { box-shadow: 0 0 0 rgba(230,57,70,0); }
+  50% { box-shadow: 0 0 18px rgba(230,57,70,.5); }
+}
+
+.step {
+  transition: transform .3s ease, background .3s ease;
+}
+
+.step:hover {
+  transform: translateX(10px);
+}
+
+.stat-item {
+  padding: 1.2rem;
+  border: 1px solid transparent;
+  transition: transform .28s ease, border-color .28s ease, background .28s ease;
+}
+
+.stat-item:hover {
+  transform: translateY(-8px);
+  border-color: rgba(230,57,70,.35);
+  background: rgba(255,255,255,.025);
+}
+
+.term-window {
+  box-shadow: 0 24px 70px rgba(0,0,0,.45), 0 0 0 1px rgba(230,57,70,.15);
+  animation: terminalGlow 3s ease-in-out infinite;
+}
+
+@keyframes terminalGlow {
+  0%, 100% { box-shadow: 0 24px 70px rgba(0,0,0,.45), 0 0 0 1px rgba(230,57,70,.15); }
+  50% { box-shadow: 0 24px 80px rgba(0,0,0,.55), 0 0 28px rgba(230,57,70,.18); }
+}
+
+.footer-note {
+  letter-spacing: .04em;
+  text-shadow: 0 0 18px rgba(230,57,70,.35);
+}
+/* MEGA UPGRADE - nuove sezioni professionali */
+.feature-panel {
+  background: linear-gradient(180deg, rgba(255,255,255,.035), rgba(255,255,255,.015));
+  border: 1px solid rgba(230,57,70,.18);
+  padding: 2rem;
+  margin-top: 2rem;
+  box-shadow: 0 24px 70px rgba(0,0,0,.28);
+}
+
+.timeline {
+  margin-top: 3rem;
+  display: grid;
+  gap: 1rem;
+}
+
+.timeline-item {
+  border-left: 3px solid var(--accent);
+  background: var(--surface);
+  padding: 1.4rem 1.6rem;
+  transition: transform .28s ease, box-shadow .28s ease, border-color .28s ease;
+}
+
+.timeline-item:hover {
+  transform: translateX(10px);
+  border-color: var(--green);
+  box-shadow: 0 18px 50px rgba(230,57,70,.13);
+}
+
+.warning-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.warning {
+  background: rgba(230,57,70,.06);
+  border: 1px solid rgba(230,57,70,.22);
+  padding: 1.2rem;
+  transition: transform .25s ease, background .25s ease;
+}
+
+.warning:hover {
+  transform: translateY(-6px);
+  background: rgba(230,57,70,.1);
+}
+
+.email-lab {
+  margin-top: 2rem;
+  background: #0d0d14;
+  border: 1px solid var(--border);
+  padding: 1.5rem;
+  font-family: var(--font-mono);
+}
+
+.email-line {
+  padding: .8rem;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+  cursor: pointer;
+  transition: background .2s ease, color .2s ease;
+}
+
+.email-line:hover,
+.email-line.selected {
+  background: rgba(230,57,70,.12);
+  color: var(--accent2);
+}
+
+.defense-score {
+  margin-top: 2rem;
+  height: 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.defense-score span {
+  display: block;
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--accent), var(--green));
+  transition: width .6s ease;
+}
+/* SUPER UPGRADE - sezioni extra */
+.compare-table {
+  margin-top: 2rem;
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.compare-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-bottom: 1px solid var(--border);
+}
+
+.compare-row:last-child {
+  border-bottom: none;
+}
+
+.compare-cell {
+  padding: 1.2rem;
+  background: var(--surface);
+}
+
+.compare-cell strong {
+  color: var(--accent2);
+}
+
+.myth-list {
+  display: grid;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.myth-item {
+  border: 1px solid rgba(230,57,70,.22);
+  background: rgba(255,255,255,.025);
+  padding: 1.2rem;
+  cursor: pointer;
+  transition: transform .25s ease, background .25s ease;
+}
+
+.myth-item:hover {
+  transform: translateX(8px);
+  background: rgba(230,57,70,.08);
+}
+
+.myth-answer {
+  display: none;
+  margin-top: .8rem;
+  color: var(--muted);
+}
+
+.myth-item.open .myth-answer {
+  display: block;
+}
+
+.security-check {
+  display: grid;
+  gap: .9rem;
+  margin-top: 2rem;
+}
+
+.security-check label {
+  display: flex;
+  gap: .8rem;
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 1rem;
+  cursor: pointer;
+}
+
+.security-check input {
+  accent-color: var(--accent);
+}
+
+.check-score {
+  margin-top: 1.2rem;
+  font-family: var(--font-mono);
+  color: var(--accent2);
+}
+
+.search-box {
+  width: 100%;
+  margin-top: 2rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font-mono);
+}
+
+.glossary-live {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.2rem;
+}
+
+.glossary-live .card.hide {
+  display: none;
+}
+/* ULTRA UPGRADE - sezioni premium */
+.premium-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.2rem;
+  margin-top: 2rem;
+}
+
+.premium-box {
+  background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.015));
+  border: 1px solid rgba(230,57,70,.18);
+  padding: 1.4rem;
+  transition: transform .28s ease, border-color .28s ease, box-shadow .28s ease;
+}
+
+.premium-box:hover {
+  transform: translateY(-8px);
+  border-color: var(--accent);
+  box-shadow: 0 18px 55px rgba(230,57,70,.14);
+}
+
+.scenario {
+  margin-top: 1rem;
+  padding: 1.2rem;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.scenario button {
+  margin-top: 1rem;
+  margin-right: .8rem;
+}
+
+.badge-wall {
+  display: flex;
+  gap: .8rem;
+  flex-wrap: wrap;
+  margin-top: 2rem;
+}
+
+.badge-wall span {
+  font-family: var(--font-mono);
+  font-size: .75rem;
+  color: var(--accent2);
+  border: 1px solid rgba(244,162,97,.35);
+  padding: .5rem .7rem;
+  background: rgba(244,162,97,.06);
+}
+
+.final-callout {
+  margin-top: 2rem;
+  padding: 2rem;
+  border-left: 4px solid var(--green);
+  background: rgba(46,196,182,.06);
+  box-shadow: 0 22px 60px rgba(0,0,0,.25);
+}
+/* SELL READY - fonti, note e mobile migliore */
+.sources-list {
+  display: grid;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.source-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 1.2rem;
+}
+
+.source-item strong {
+  color: var(--accent2);
+}
+
+.license-note {
+  margin-top: 2rem;
+  padding: 1.4rem;
+  border-left: 4px solid var(--accent2);
+  background: rgba(244,162,97,.06);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: .85rem;
+  line-height: 1.7;
+}
+
+@media (max-width: 700px) {
+  nav {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+
+  .nav-links {
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  #hero {
+    padding-left: 1.2rem;
+    padding-right: 1.2rem;
+  }
+
+  .hero-title {
+    font-size: clamp(2.6rem, 15vw, 4rem);
+    max-width: 100%;
+  }
+
+  .hero-sub {
+    font-size: .95rem;
+  }
+
+  .compare-row {
+    grid-template-columns: 1fr;
+  }
+
+  .btn {
+    width: 100%;
+    text-align: center;
+  }
+
+  .terminal,
+  .email-lab {
+    overflow-x: auto;
+  }
+}
+  </style>
+</head>
+<body>
+
+<div id="cursor"></div>
+<div id="cursor-ring"></div>
+
+<nav>
+  <span class="nav-logo">social_engineering</span>
+  <ul class="nav-links">
+    <li><a href="#cosa-e">Cos'è</a></li>
+    <li><a href="#attacchi">Attacchi</a></li>
+    <li><a href="#difesa">Difesa</a></li>
+  </ul>
+</nav>
+
+<section id="hero">
+  <p class="hero-tag">  </p>
+  <h1 class="hero-title">
+    Social<br>
+    <span class="red">Engineering</span>
+  </h1>
+  <p class="hero-sub">
+    L'arte di manipolare le persone per ottenere informazioni riservate.
+    Non serve bucare un firewall quando si può bucare la mente umana.
+  </p>
+  <div class="hero-cta">
+    <a href="#cosa-e" class="btn btn-primary">Esplora</a>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<section id="cosa-e">
+  <p class="section-label">01 — Definizione</p>
+  <h2>Cos'è il Social Engineering?</h2>
+  <p class="lead">
+    Il social engineering è l'insieme di tecniche psicologiche usate per ingannare le persone
+    e convincerle a rivelare informazioni confidenziali o a compiere azioni dannose.
+  </p>
+  <p>
+    A differenza degli attacchi tecnici, il social engineering sfrutta il fattore umano:
+    fiducia, paura, curiosità, autorità e urgenza. È considerato uno degli strumenti più pericolosi
+    in ambito cybersecurity perché non richiede competenze tecniche avanzate — basta saper
+    manipolare le emozioni delle persone.
+  </p>
+  <div class="highlight-box">
+    <span>Kevin Mitnick</span>, uno dei più famosi hacker della storia, affermava:<br><br>
+    "Ho raramente dovuto violare la sicurezza tecnica. Il componente umano è di gran lunga
+    il punto più vulnerabile in qualsiasi sistema."
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<section id="attacchi">
+  <p class="section-label">02 — Tipologie</p>
+  <h2>Principali Tecniche di Attacco</h2>
+  <p>Ogni attacco di social engineering punta su un diverso meccanismo psicologico.</p>
+  <div class="cards">
+
+    <div class="card">
+      <div class="card-icon">🎣</div>
+      <h3>Phishing</h3>
+      <p>Email o messaggi falsi che imitano entità affidabili (banche, Google, Poste Italiane) per rubare credenziali o dati personali.</p>
+      <span class="tag tag-high">Rischio Alto</span>
+    </div>
+
+    <div class="card">
+      <div class="card-icon">🎯</div>
+      <h3>Spear Phishing</h3>
+      <p>Versione mirata del phishing: l'attaccante studia la vittima e personalizza il messaggio per renderlo credibile (es. finge di essere il capo).</p>
+      <span class="tag tag-high">Rischio Alto</span>
+    </div>
+
+    <div class="card">
+      <div class="card-icon">📞</div>
+      <h3>Vishing</h3>
+      <p>Phishing via telefono. L'attaccante si spaccia per operatore bancario, tecnico informatico o ente governativo per ottenere PIN e password.</p>
+      <span class="tag tag-high">Rischio Alto</span>
+    </div>
+
+    <div class="card">
+      <div class="card-icon">💬</div>
+      <h3>Smishing</h3>
+      <p>Phishing via SMS. Messaggi con link fraudolenti che simulano notifiche di corrieri, banche o servizi pubblici.</p>
+      <span class="tag tag-medium">Rischio Medio</span>
+    </div>
+
+    <div class="card">
+      <div class="card-icon">🎭</div>
+      <h3>Pretexting</h3>
+      <p>L'attaccante inventa uno scenario credibile (un "pretext") per giustificare la richiesta di informazioni. Es: finge di essere un tecnico IT.</p>
+      <span class="tag tag-medium">Rischio Medio</span>
+    </div>
+
+    <div class="card">
+      <div class="card-icon">🪤</div>
+      <h3>Baiting</h3>
+      <p>Si lascia un dispositivo infetto (es. chiavetta USB) in un luogo pubblico sperando che qualcuno la colleghi al proprio computer per curiosità.</p>
+      <span class="tag tag-medium">Rischio Medio</span>
+    </div>
+
+    <div class="card">
+      <div class="card-icon">🚪</div>
+      <h3>Tailgating</h3>
+      <p>Tecnica fisica: l'attaccante segue una persona autorizzata attraverso una porta sicura fingendo di avere le mani occupate o di aver dimenticato il badge.</p>
+      <span class="tag tag-low">Fisico</span>
+    </div>
+
+    <div class="card">
+      <div class="card-icon">🤝</div>
+      <h3>Quid Pro Quo</h3>
+      <p>Offerta di un servizio in cambio di informazioni. Es: "Ti risolvo il problema al computer, dimmi solo la tua password temporanea."</p>
+      <span class="tag tag-medium">Rischio Medio</span>
+    </div>
+
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<section id="funzionamento">
+  <p class="section-label">03 — Psicologia</p>
+  <h2>Come Funziona: le Fasi</h2>
+  <p>Un attacco di social engineering segue sempre un processo strutturato.</p>
+  <div class="steps">
+
+    <div class="step">
+      <div class="step-num">01</div>
+      <div class="step-body">
+        <h3>Ricognizione (OSINT)</h3>
+        <p>L'attaccante raccoglie informazioni sulla vittima: LinkedIn, social network, sito aziendale. Più dati ha, più convincente sarà l'attacco.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">02</div>
+      <div class="step-body">
+        <h3>Costruzione del pretesto</h3>
+        <p>Si crea un'identità falsa credibile e si pianifica lo scenario. L'obiettivo è sembrare legittimo e creare un contesto che giustifichi la richiesta.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">03</div>
+      <div class="step-body">
+        <h3>Aggancio (Hook)</h3>
+        <p>Si stabilisce il contatto con la vittima e si innesca un meccanismo psicologico: urgenza ("Il suo conto verrà bloccato!"), autorità, paura o reciprocità.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">04</div>
+      <div class="step-body">
+        <h3>Estrazione delle informazioni</h3>
+        <p>La vittima cede i dati, clicca un link o compie un'azione. Spesso non si accorge nemmeno di essere stata manipolata.</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">05</div>
+      <div class="step-body">
+        <h3>Copertura delle tracce</h3>
+        <p>L'attaccante sparisce o risolve il "problema" inventato per non destare sospetti, così la vittima non segnala l'incidente.</p>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<div id="statistiche">
+  <div class="inner">
+    <p class="section-label">04 — Numeri</p>
+    <h2>Social Engineering in Numeri</h2>
+    <div class="stats-grid">
+      <div class="stat-item reveal">
+        <div class="stat-num" data-target="98">0</div>
+        <div class="stat-label">% degli attacchi informatici usa il fattore umano (Verizon DBIR)</div>
+      </div>
+      <div class="stat-item reveal">
+        <div class="stat-num" data-target="3" data-suffix="B">0</div>
+        <div class="stat-label">email di phishing inviate ogni giorno nel mondo</div>
+      </div>
+      <div class="stat-item reveal">
+        <div class="stat-num" data-target="17" data-prefix="$">0</div>
+        <div class="stat-label">miliardi persi per BEC (Business Email Compromise) nel 2022</div>
+      </div>
+      <div class="stat-item reveal">
+        <div class="stat-num" data-target="60" data-suffix="s">0</div>
+        <div class="stat-label">in media per cadere in un attacco di phishing ben costruito</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<section id="difesa">
+  <p class="section-label">05 — Protezione</p>
+  <h2>Come Difendersi</h2>
+  <p>La prima linea di difesa è sempre l'educazione e la consapevolezza.</p>
+  <div class="grid-2">
+    <div>
+      <h3 style="margin-bottom:1rem; color: var(--green);">Per gli individui</h3>
+      <ul class="checklist">
+        <li>Verifica sempre l'identità di chi chiede dati sensibili</li>
+        <li>Non cliccare link nelle email sospette — vai direttamente al sito</li>
+        <li>Usa l'autenticazione a due fattori (2FA) su tutti gli account</li>
+        <li>Nessuna banca chiede mai PIN o password via email o telefono</li>
+        <li>Segnala email sospette all'IT o alla banca</li>
+        <li>Diffida dell'urgenza eccessiva nei messaggi</li>
+      </ul>
+    </div>
+    <div>
+      <h3 style="margin-bottom:1rem; color: var(--green);">Per le aziende</h3>
+      <ul class="checklist">
+        <li>Formazione periodica dei dipendenti su phishing e attacchi sociali</li>
+        <li>Simulazioni di phishing per testare la preparazione del team</li>
+        <li>Politiche chiare su come verificare richieste insolite</li>
+        <li>Segmentazione degli accessi (principio del minimo privilegio)</li>
+        <li>Procedure di verifica a più livelli per bonifici e trasferimenti</li>
+        <li>Piano di risposta agli incidenti aggiornato</li>
+      </ul>
+    </div>
+  </div>
+</section>
+<div class="divider"></div>
+
+<div id="demo">
+  ...
+</div>
+
+<div class="divider"></div>
+
+<section id="importanza">
+  <p class="section-label">07 — Impatto</p>
+  <h2>Perché il Social Engineering è così pericoloso?</h2>
+  <p class="lead">
+    Il social engineering è pericoloso perché non attacca direttamente i computer,
+    ma le persone. Anche il sistema informatico più protetto può diventare vulnerabile
+    se un utente viene convinto a cliccare un link, comunicare una password o autorizzare
+    un’operazione sbagliata.
+  </p>
+  <p>
+    Molti attacchi informatici moderni iniziano proprio da un errore umano. Gli hacker
+    studiano il comportamento delle vittime, raccolgono informazioni pubbliche e costruiscono
+    messaggi molto credibili. Per questo motivo la sicurezza informatica non riguarda solo
+    antivirus e firewall, ma anche attenzione, formazione e capacità di riconoscere i segnali
+    di pericolo.
+  </p>
+</section>
+
+<div class="divider"></div>
+
+<section id="casi-reali">
+  <p class="section-label">08 — Casi reali</p>
+  <h2>Attacchi famosi basati sul fattore umano</h2>
+
+  <div class="cards">
+    <div class="card">
+      <div class="card-icon">🏢</div>
+      <h3>Business Email Compromise</h3>
+      <p>
+        In molti casi aziendali, i truffatori si fingono dirigenti o fornitori e convincono
+        i dipendenti a eseguire bonifici verso conti controllati dagli attaccanti.
+      </p>
+      <span class="tag tag-high">Impatto economico</span>
+    </div>
+
+    <div class="card">
+      <div class="card-icon">🔐</div>
+      <h3>Furto di credenziali</h3>
+      <p>
+        Attraverso email false, pagine di login imitate e messaggi urgenti, gli attaccanti
+        ottengono username e password per entrare in account personali o aziendali.
+      </p>
+      <span class="tag tag-high">Accesso non autorizzato</span>
+    </div>
+
+    <div class="card">
+      <div class="card-icon">📱</div>
+      <h3>Truffe via SMS</h3>
+      <p>
+        Messaggi che sembrano provenire da corrieri, banche o servizi pubblici spingono
+        l’utente ad aprire link falsi e inserire dati sensibili.
+      </p>
+      <span class="tag tag-medium">Smishing</span>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<section id="segnali">
+  <p class="section-label">09 — Riconoscimento</p>
+  <h2>Come riconoscere un tentativo di manipolazione</h2>
+  <p>
+    Un messaggio sospetto spesso contiene segnali ricorrenti. Imparare a riconoscerli
+    permette di evitare molti attacchi prima ancora che inizino.
+  </p>
+
+  <ul class="checklist">
+    <li>Richieste urgenti che mettono pressione alla vittima</li>
+    <li>Errori grammaticali o traduzioni poco naturali</li>
+    <li>Indirizzi email simili ma non identici a quelli ufficiali</li>
+    <li>Link accorciati o domini strani</li>
+    <li>Richieste di password, codici OTP o dati bancari</li>
+    <li>Promesse troppo belle per essere vere</li>
+    <li>Minacce di blocco account, multe o conseguenze immediate</li>
+  </ul>
+</section>
+
+<div class="divider"></div>
+
+<section id="quiz">
+  <p class="section-label">10 — Test</p>
+  <h2>Quiz: sapresti riconoscere un attacco?</h2>
+  <p>
+    Leggi la situazione e scegli se secondo te è sicura o sospetta.
+  </p>
+
+  <div class="terminal">
+    <div class="term-body">
+      <p><strong>Messaggio ricevuto:</strong></p>
+      <p>
+        “Gentile utente, il suo conto verrà sospeso entro 2 ore.
+        Clicchi subito qui per confermare la sua identità.”
+      </p>
+
+      <button class="btn btn-primary" onclick="quizAnswer(true)">È sospetto</button>
+      <button class="btn btn-ghost" onclick="quizAnswer(false)">È sicuro</button>
+
+      <p id="quiz-result" style="margin-top:1.5rem;"></p>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<section id="glossario">
+  <p class="section-label">11 — Glossario</p>
+  <h2>Glossario essenziale</h2>
+
+  <div class="cards">
+    <div class="card">
+      <h3>OSINT</h3>
+      <p>Raccolta di informazioni da fonti pubbliche, come social network, siti web e motori di ricerca.</p>
+    </div>
+
+    <div class="card">
+      <h3>Malware</h3>
+      <p>Software dannoso progettato per rubare dati, danneggiare dispositivi o controllare sistemi.</p>
+    </div>
+
+    <div class="card">
+      <h3>2FA</h3>
+      <p>Autenticazione a due fattori: aggiunge un secondo controllo oltre alla password.</p>
+    </div>
+
+    <div class="card">
+      <h3>Phishing</h3>
+      <p>Tecnica che usa messaggi falsi per ingannare la vittima e rubare informazioni.</p>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<section id="conclusione">
+  <p class="section-label">12 — Conclusione</p>
+  <h2>Conclusione</h2>
+  <p class="lead">
+    Il social engineering dimostra che la sicurezza informatica non dipende solo dalla tecnologia,
+    ma anche dal comportamento umano.
+  </p>
+  <p>
+    Antivirus, firewall e sistemi di protezione sono fondamentali, ma non bastano se le persone
+    non sono preparate. La migliore difesa è sviluppare consapevolezza: controllare le fonti,
+    non agire sotto pressione, verificare le richieste insolite e proteggere sempre i propri dati.
+  </p>
+  <div class="highlight-box">
+    La sicurezza non è solo una questione tecnica: è una competenza quotidiana.
+  </div>
+</section>
+<div class="divider"></div>
+
+<section id="timeline">
+  <p class="section-label">13 — Timeline</p>
+  <h2>Timeline di un attacco reale</h2>
+  <p>Un attacco di social engineering non nasce per caso: segue passaggi precisi e studiati.</p>
+
+  <div class="timeline">
+    <div class="timeline-item reveal">
+      <h3>1. Raccolta informazioni</h3>
+      <p>L'attaccante studia social, email, scuola, lavoro e abitudini della vittima.</p>
+    </div>
+    <div class="timeline-item reveal">
+      <h3>2. Messaggio credibile</h3>
+      <p>Viene creato un messaggio che sembra arrivare da una persona o azienda affidabile.</p>
+    </div>
+    <div class="timeline-item reveal">
+      <h3>3. Pressione psicologica</h3>
+      <p>Urgenza, paura o autorità spingono la vittima ad agire senza riflettere.</p>
+    </div>
+    <div class="timeline-item reveal">
+      <h3>4. Furto dei dati</h3>
+      <p>La vittima inserisce password, codici o informazioni personali in una pagina falsa.</p>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<section id="red-flags">
+  <p class="section-label">14 — Red Flags</p>
+  <h2>Segnali da non ignorare</h2>
+  <p>Questi elementi devono far scattare subito il dubbio.</p>
+
+  <div class="warning-grid">
+    <div class="warning reveal"><h3>Urgenza estrema</h3><p>"Hai solo 10 minuti" serve a farti sbagliare.</p></div>
+    <div class="warning reveal"><h3>Link strani</h3><p>Dominio simile ma non ufficiale: trappola classica.</p></div>
+    <div class="warning reveal"><h3>Richiesta password</h3><p>Nessun tecnico vero chiede la tua password.</p></div>
+    <div class="warning reveal"><h3>Minacce</h3><p>Blocco conto, multa o account sospeso sono leve psicologiche.</p></div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<section id="laboratorio">
+  <p class="section-label">15 — Laboratorio</p>
+  <h2>Laboratorio: trova gli elementi sospetti</h2>
+  <p>Clicca sulle righe dell'email per evidenziare i segnali pericolosi.</p>
+
+  <div class="email-lab">
+    <div class="email-line">Da: sicurezza-banca@secure-login-verifica.ru</div>
+    <div class="email-line">Oggetto: URGENTE - Il tuo conto verrà bloccato oggi</div>
+    <div class="email-line">Link: http://banca-verifica-accesso.com/login</div>
+    <div class="email-line">Richiesta: inserisci password e codice OTP</div>
+  </div>
+
+  <div class="defense-score"><span id="lab-score"></span></div>
+  <p id="lab-result" style="margin-top:1rem;"></p>
+</section>
+<div class="divider"></div>
+
+<section id="confronto">
+  <p class="section-label">16 — Confronto</p>
+  <h2>Attacco tecnico vs Social Engineering</h2>
+  <p>La differenza principale è il bersaglio: nel social engineering non si forza la macchina, si manipola la persona.</p>
+
+  <div class="compare-table reveal">
+    <div class="compare-row">
+      <div class="compare-cell"><strong>Attacco tecnico</strong><br>Colpisce software, reti, server e vulnerabilità informatiche.</div>
+      <div class="compare-cell"><strong>Social engineering</strong><br>Colpisce fiducia, paura, urgenza, curiosità e distrazione.</div>
+    </div>
+    <div class="compare-row">
+      <div class="compare-cell"><strong>Richiede competenze tecniche</strong><br>Serve conoscere strumenti, codice o sistemi.</div>
+      <div class="compare-cell"><strong>Richiede manipolazione</strong><br>Serve creare una storia credibile e convincente.</div>
+    </div>
+    <div class="compare-row">
+      <div class="compare-cell"><strong>Difesa</strong><br>Aggiornamenti, firewall, antivirus, patch.</div>
+      <div class="compare-cell"><strong>Difesa</strong><br>Consapevolezza, verifica, calma e formazione.</div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<section id="miti">
+  <p class="section-label">17 — Miti</p>
+  <h2>Miti da sfatare</h2>
+  <p>Clicca ogni riquadro per vedere la spiegazione.</p>
+
+  <div class="myth-list">
+    <div class="myth-item reveal">
+      <h3>“A me non succede”</h3>
+      <p class="myth-answer">Falso: gli attacchi spesso sono automatici e colpiscono chiunque abbia email, telefono o account online.</p>
+    </div>
+    <div class="myth-item reveal">
+      <h3>“Se sembra ufficiale, è vero”</h3>
+      <p class="myth-answer">Falso: loghi, colori e nomi aziendali possono essere copiati facilmente.</p>
+    </div>
+    <div class="myth-item reveal">
+      <h3>“Basta avere un antivirus”</h3>
+      <p class="myth-answer">Falso: l’antivirus non può impedirti di consegnare volontariamente una password.</p>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<section id="autovalutazione">
+  <p class="section-label">18 — Autovalutazione</p>
+  <h2>Quanto sei protetto?</h2>
+  <p>Spunta le abitudini che segui già.</p>
+
+  <div class="security-check">
+    <label><input type="checkbox" class="safe-check"> Uso password diverse per ogni account</label>
+    <label><input type="checkbox" class="safe-check"> Ho attivato il 2FA sugli account importanti</label>
+    <label><input type="checkbox" class="safe-check"> Controllo sempre il dominio dei link</label>
+    <label><input type="checkbox" class="safe-check"> Non condivido codici OTP o password</label>
+    <label><input type="checkbox" class="safe-check"> Diffido dai messaggi urgenti o minacciosi</label>
+  </div>
+
+  <p class="check-score" id="safe-score">Punteggio sicurezza: 0 / 5</p>
+</section>
+
+<div class="divider"></div>
+
+<section id="glossario-live">
+  <p class="section-label">19 — Ricerca</p>
+  <h2>Mini glossario cercabile</h2>
+  <p>Cerca velocemente una parola chiave di cybersecurity.</p>
+
+  <input class="search-box" id="glossary-search" type="text" placeholder="Cerca: phishing, malware, 2FA...">
+
+  <div class="glossary-live">
+    <div class="card" data-word="phishing email truffa"><h3>Phishing</h3><p>Email o messaggi falsi creati per rubare dati.</p></div>
+    <div class="card" data-word="malware virus software dannoso"><h3>Malware</h3><p>Programma progettato per danneggiare o rubare informazioni.</p></div>
+    <div class="card" data-word="2fa autenticazione password sicurezza"><h3>2FA</h3><p>Secondo livello di protezione oltre alla password.</p></div>
+    <div class="card" data-word="osint informazioni social ricerca"><h3>OSINT</h3><p>Raccolta di informazioni pubbliche su una persona o azienda.</p></div>
+  </div>
+</section>
+<div class="divider"></div>
+
+<section id="strumenti">
+  <p class="section-label">20 — Strumenti</p>
+  <h2>Strumenti usati dagli attaccanti</h2>
+  <p>Gli attaccanti usano strumenti semplici ma molto efficaci per rendere credibile la truffa.</p>
+
+  <div class="premium-grid">
+    <div class="premium-box reveal">
+      <h3>Email spoofing</h3>
+      <p>Serve a far sembrare che un messaggio arrivi da un indirizzo affidabile.</p>
+    </div>
+    <div class="premium-box reveal">
+      <h3>Pagine fake</h3>
+      <p>Copiano graficamente siti veri per rubare credenziali e codici.</p>
+    </div>
+    <div class="premium-box reveal">
+      <h3>OSINT</h3>
+      <p>Raccolta di informazioni pubbliche per personalizzare l’attacco.</p>
+    </div>
+    <div class="premium-box reveal">
+      <h3>Deepfake vocali</h3>
+      <p>Voci imitate con l’intelligenza artificiale per rendere credibile una richiesta.</p>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<section id="scenario-live">
+  <p class="section-label">21 — Scenario</p>
+  <h2>Scenario interattivo</h2>
+  <p>Scegli come reagiresti davanti a una richiesta sospetta.</p>
+
+  <div class="scenario">
+    <p><strong>Situazione:</strong> ricevi un messaggio dal “preside” che ti chiede urgentemente la password dell’account scolastico per “verificare un problema”.</p>
+    <button class="btn btn-primary" onclick="scenarioAnswer(true)">Verifico tramite canale ufficiale</button>
+    <button class="btn btn-ghost" onclick="scenarioAnswer(false)">Invio subito la password</button>
+    <p id="scenario-result" style="margin-top:1rem;"></p>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<section id="competenze">
+  <p class="section-label">22 — Competenze</p>
+  <h2>Competenze che dimostra questo sito</h2>
+  <p>Questo progetto mostra conoscenze tecniche, capacità di comunicazione e attenzione alla sicurezza digitale.</p>
+
+  <div class="badge-wall">
+    <span>Cybersecurity</span>
+    <span>HTML</span>
+    <span>CSS</span>
+    <span>JavaScript</span>
+    <span>OSINT</span>
+    <span>Phishing awareness</span>
+    <span>Educazione digitale</span>
+    <span>Problem solving</span>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<section id="messaggio-finale">
+  <p class="section-label">23 — Messaggio finale</p>
+  <h2>La lezione più importante</h2>
+  <p>
+    La tecnologia può proteggere molto, ma non può sostituire il pensiero critico.
+    Ogni persona è parte della sicurezza: fermarsi, controllare e verificare può evitare un attacco.
+  </p>
+
+  <div class="final-callout reveal">
+    <h3>Regola d’oro</h3>
+    <p>Se un messaggio ti mette fretta, ti spaventa o ti chiede dati sensibili, fermati: probabilmente qualcuno sta cercando di manipolarti.</p>
+  </div>
+</section>
+<div class="divider"></div>
+
+<section id="fonti">
+  <p class="section-label">24 — Fonti</p>
+  <h2>Fonti e riferimenti</h2>
+  <p>
+    Questa sezione rende il progetto più serio e adatto a una presentazione scolastica o a un sito educativo.
+  </p>
+
+  <div class="sources-list">
+    <div class="source-item reveal">
+      <strong>Verizon Data Breach Investigations Report</strong>
+      <p>Riferimento usato per parlare del ruolo del fattore umano negli attacchi informatici.</p>
+    </div>
+
+    <div class="source-item reveal">
+      <strong>CISA - Cybersecurity and Infrastructure Security Agency</strong>
+      <p>Fonte autorevole per consigli di sicurezza, phishing awareness e protezione degli utenti.</p>
+    </div>
+
+    <div class="source-item reveal">
+      <strong>ENISA - European Union Agency for Cybersecurity</strong>
+      <p>Riferimento europeo per rischi informatici, minacce digitali e buone pratiche di difesa.</p>
+    </div>
+
+    <div class="source-item reveal">
+      <strong>OWASP</strong>
+      <p>Organizzazione usata come riferimento generale per sicurezza applicativa e consapevolezza cyber.</p>
+    </div>
+  </div>
+
+  <div class="license-note">
+    Nota: questo sito è un progetto educativo sul social engineering. I contenuti sono pensati per informare,
+    prevenire e sensibilizzare. Non incoraggiano attività illegali e non devono essere usati per danneggiare persone,
+    aziende o sistemi informatici.
+  </div>
+</section>
+<footer>
+  <strong class="footer-note">"Gli hacker non entrano nei sistemi. Entrano nella mente delle persone."</strong>
+</footer>
+
+<script>
+  const cur = document.getElementById('cursor');
+  const ring = document.getElementById('cursor-ring');
+  let mx = 0, my = 0;
+  document.addEventListener('mousemove', e => {
+    mx = e.clientX; my = e.clientY;
+    cur.style.left  = (mx - 6)  + 'px';
+    cur.style.top   = (my - 6)  + 'px';
+    ring.style.left = (mx - 18) + 'px';
+    ring.style.top  = (my - 18) + 'px';
+  });
+
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: .15 });
+  document.querySelectorAll('.card, .step, .reveal').forEach(el => observer.observe(el));
+
+  function animateCount(el) {
+    const target = +el.dataset.target;
+    const prefix = el.dataset.prefix || '';
+    const suffix = el.dataset.suffix || '%';
+    let start = 0;
+    const dur = 1200;
+    const step = target / (dur / 16);
+    const timer = setInterval(() => {
+      start = Math.min(start + step, target);
+      el.textContent = prefix + Math.floor(start) + suffix;
+      if (start >= target) clearInterval(timer);
+    }, 16);
+  }
+
+  document.querySelectorAll('.stat-num').forEach(el => {
+    new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting) animateCount(el);
+    }, { threshold: .5 }).observe(el);
+  });
+
+  const lines = [
+    { text: '$ analizza_email --file "promo_banca.eml"', cls: 'term-prompt-line', delay: 0 },
+    { text: '', delay: 400 },
+    { text: '[ MITTENTE ]  posteitalianeS@secure-login.ru', cls: 'term-warning', delay: 600 },
+    { text: '  ⚠  Dominio non ufficiale! Il vero è poste.it', cls: 'term-comment', delay: 1000 },
+    { text: '', delay: 1200 },
+    { text: '[ OGGETTO ]   "⚠️ Il tuo conto verrà bloccato entro 24h!"', cls: 'term-warning', delay: 1400 },
+    { text: '  ⚠  Urgenza artificiale — tecnica classica di manipolazione', cls: 'term-comment', delay: 1800 },
+    { text: '', delay: 2000 },
+    { text: '[ LINK ]      http://posteit-al-sicuro.com/login.php', cls: 'term-warning', delay: 2200 },
+    { text: '  ⚠  URL fake che imita il brand — NON cliccare mai', cls: 'term-comment', delay: 2600 },
+    { text: '', delay: 2800 },
+    { text: '[ ALLEGATO ]  modulo_verifica.exe', cls: 'term-warning', delay: 3000 },
+    { text: '  ⚠  Eseguibile mascherato da PDF — probabile malware', cls: 'term-comment', delay: 3400 },
+    { text: '', delay: 3600 },
+    { text: '✓ Analisi completata: PHISHING CONFERMATO', cls: 'term-ok', delay: 3800 },
+    { text: '  Azione consigliata: elimina e segnala alla banca.', cls: 'term-ok', delay: 4000 },
+  ];
+
+  function runTerminal() {
+    const out = document.getElementById('term-output');
+    out.innerHTML = '';
+    lines.forEach(({ text, cls, delay }) => {
+      setTimeout(() => {
+        const span = document.createElement('span');
+        span.className = 'term-line ' + (cls || '');
+        span.textContent = text;
+        out.appendChild(span);
+        out.scrollTop = out.scrollHeight;
+      }, delay);
+    });
+    setTimeout(() => {
+      const cur2 = document.createElement('span');
+      cur2.className = 'term-cursor';
+      out.appendChild(cur2);
+    }, 4200);
+  }
+
+  new IntersectionObserver(entries => {
+    if (entries[0].isIntersecting) runTerminal();
+  }, { threshold: .3 }).observe(document.getElementById('demo'));
+/* EXTRA INTERAZIONI - rende il sito piu coinvolgente */
+const progress = document.createElement('div');
+progress.className = 'scroll-progress';
+document.body.appendChild(progress);
+
+window.addEventListener('scroll', () => {
+  const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+  const scrolled = maxScroll > 0 ? (window.scrollY / maxScroll) * 100 : 0;
+  progress.style.width = scrolled + '%';
+});
+
+document.querySelectorAll('.card, .step, .reveal').forEach((el, index) => {
+  el.style.setProperty('--delay', (index % 8) * 0.08 + 's');
+});
+
+document.querySelectorAll('.card').forEach(card => {
+  card.addEventListener('mousemove', e => {
+    const rect = card.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const rotateX = ((y / rect.height) - .5) * -6;
+    const rotateY = ((x / rect.width) - .5) * 6;
+    card.style.transform = `translateY(-8px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+  });
+
+  card.addEventListener('mouseleave', () => {
+    card.style.transform = '';
+  });
+});
+
+const links = document.querySelectorAll('.nav-links a');
+const sections = [...links]
+  .map(link => document.querySelector(link.getAttribute('href')))
+  .filter(Boolean);
+
+window.addEventListener('scroll', () => {
+  let current = '';
+  sections.forEach(section => {
+    if (window.scrollY >= section.offsetTop - 160) {
+      current = '#' + section.id;
+    }
+  });
+
+  links.forEach(link => {
+    link.classList.toggle('active', link.getAttribute('href') === current);
+  });
+});
+
+const heroTitle = document.querySelector('.hero-title');
+window.addEventListener('scroll', () => {
+  if (!heroTitle) return;
+  heroTitle.style.transform = `translateY(${window.scrollY * 0.08}px)`;
+});
+/* EXTRA PLUS - movimento del mouse e micro effetti */
+document.querySelectorAll('.card').forEach(card => {
+  card.addEventListener('mousemove', e => {
+    const rect = card.getBoundingClientRect();
+    const mx = ((e.clientX - rect.left) / rect.width) * 100;
+    const my = ((e.clientY - rect.top) / rect.height) * 100;
+    card.style.setProperty('--mx', mx + '%');
+    card.style.setProperty('--my', my + '%');
+  });
+});
+
+const hero = document.querySelector('#hero');
+if (hero) {
+  hero.addEventListener('mousemove', e => {
+    const x = (e.clientX / window.innerWidth - .5) * 14;
+    const y = (e.clientY / window.innerHeight - .5) * 14;
+    hero.style.backgroundPosition = `${x}px ${y}px`;
+  });
+}
+
+document.querySelectorAll('.step').forEach(step => {
+  step.addEventListener('mouseenter', () => {
+    const num = step.querySelector('.step-num');
+    if (num) num.style.transform = 'scale(1.12) rotate(-4deg)';
+  });
+
+  step.addEventListener('mouseleave', () => {
+    const num = step.querySelector('.step-num');
+    if (num) num.style.transform = '';
+  });
+});
+
+document.querySelectorAll('.stat-num').forEach(num => {
+  num.addEventListener('mouseenter', () => {
+    num.style.transform = 'scale(1.08)';
+  });
+
+  num.addEventListener('mouseleave', () => {
+    num.style.transform = '';
+  });
+});
+function quizAnswer(correct) {
+  const result = document.getElementById('quiz-result');
+  if (correct) {
+    result.textContent = 'Corretto: il messaggio usa urgenza e minaccia, due segnali tipici del phishing.';
+    result.style.color = 'var(--green)';
+  } else {
+    result.textContent = 'Attenzione: questo messaggio è sospetto. Nessuna banca dovrebbe chiedere dati tramite link urgente.';
+    result.style.color = 'var(--accent)';
+  }
+}
+/* MEGA UPGRADE - laboratorio interattivo */
+const emailLines = document.querySelectorAll('.email-line');
+const labScore = document.getElementById('lab-score');
+const labResult = document.getElementById('lab-result');
+
+emailLines.forEach(line => {
+  line.addEventListener('click', () => {
+    line.classList.toggle('selected');
+
+    const selected = document.querySelectorAll('.email-line.selected').length;
+    const percent = Math.round((selected / emailLines.length) * 100);
+
+    if (labScore) labScore.style.width = percent + '%';
+
+    if (labResult) {
+      if (percent === 100) {
+        labResult.textContent = 'Perfetto: hai riconosciuto tutti i segnali sospetti.';
+        labResult.style.color = 'var(--green)';
+      } else {
+        labResult.textContent = 'Continua: ci sono ancora elementi sospetti da trovare.';
+        labResult.style.color = 'var(--accent2)';
+      }
+    }
+  });
+});
+/* SUPER UPGRADE - interazioni extra */
+document.querySelectorAll('.myth-item').forEach(item => {
+  item.addEventListener('click', () => {
+    item.classList.toggle('open');
+  });
+});
+
+const safeChecks = document.querySelectorAll('.safe-check');
+const safeScore = document.getElementById('safe-score');
+
+safeChecks.forEach(check => {
+  check.addEventListener('change', () => {
+    const total = safeChecks.length;
+    const selected = document.querySelectorAll('.safe-check:checked').length;
+    safeScore.textContent = `Punteggio sicurezza: ${selected} / ${total}`;
+
+    if (selected >= 4) {
+      safeScore.style.color = 'var(--green)';
+    } else if (selected >= 2) {
+      safeScore.style.color = 'var(--accent2)';
+    } else {
+      safeScore.style.color = 'var(--accent)';
+    }
+  });
+});
+
+const glossarySearch = document.getElementById('glossary-search');
+const glossaryCards = document.querySelectorAll('.glossary-live .card');
+
+if (glossarySearch) {
+  glossarySearch.addEventListener('input', () => {
+    const value = glossarySearch.value.toLowerCase();
+
+    glossaryCards.forEach(card => {
+      const text = (card.textContent + ' ' + card.dataset.word).toLowerCase();
+      card.classList.toggle('hide', !text.includes(value));
+    });
+  });
+}
+/* ULTRA UPGRADE - scenario interattivo */
+function scenarioAnswer(correct) {
+  const result = document.getElementById('scenario-result');
+  if (!result) return;
+
+  if (correct) {
+    result.textContent = 'Scelta corretta: verificare tramite canale ufficiale è il comportamento più sicuro.';
+    result.style.color = 'var(--green)';
+  } else {
+    result.textContent = 'Scelta pericolosa: una password non va mai inviata via messaggio, nemmeno se la richiesta sembra urgente.';
+    result.style.color = 'var(--accent)';
+  }
+}
+</script>
+</body>
+</html>
